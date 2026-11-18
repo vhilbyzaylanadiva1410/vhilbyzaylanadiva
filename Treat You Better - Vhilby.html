@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lirik Sinkron</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px; font-family: system-ui, sans-serif;
+    background: #90ceed; color: #def488; display: flex; justify-content: center;
+  }
+  main { width: 100%; max-width: 560px; }
+  h1 { text-align: center; font-size: 22px; }
+  .card { background: #86f1e3; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .card h2 { margin: 0 0 10px; font-size: 15px; color: #441db9; }
+  textarea { width: 100%; height: 130px; border-radius: 8px; border: 0; padding: 10px;
+             background: #83efa1; color: #0b0b0b; resize: vertical; }
+  audio { width: 100%; margin-top: 10px; }
+  button { padding: 10px 16px; border: 0; border-radius: 8px; cursor: pointer;
+           background: #1db954; color: #000; font-weight: bold; }
+  button:disabled { background: #efd696; color: #888; cursor: not-allowed; }
+  button.alt { background: #caa4ed; color: #eee; }
+  #tap { width: 100%; font-size: 18px; padding: 16px; margin-top: 10px; }
+  #petunjuk { margin: 10px 0 0; color: #ccc; min-height: 24px; }
+  #lirik { height: 280px; overflow-y: auto; text-align: center; scroll-behavior: smooth; position: relative; }
+  .baris { padding: 8px; font-size: 20px; color: #666; transition: .3s; }
+  .baris.aktif { color: #fff; font-size: 26px; font-weight: bold; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🎵 Treat You Better</h1>
+
+  <div class="card">
+    <h2>Langkah 1: Pilih lagu</h2>
+    <input type="file" id="fileLagu" accept="audio/*">
+    <audio id="audio" controls></audio>
+  </div>
+
+  <div class="card">
+    <h2>Langkah 2: Tempel lirik (1 baris = 1 lirik)</h2>
+    <textarea id="teksLirik" placeholder="Tempel lirik treat you better">
+ I just wanna give you the loving that you're missing
+Baby, just to wake up with you
+Would be everything I need and this could be so different
+Tell me what you want to do
+'Cause I know I can treat you better than he can
+And any girl like you deserves a gentleman
+Tell me why are we wasting time
+On all your wasted crying
+When you should be with me instead
+I know I can treat you better
+Better than he can
+</textarea>
+</div>
+
+  <div class="card">
+    <h2>Langkah 3: Tap sesuai beat</h2>
+    <button id="mulai">▶ Mulai</button>
+    <button id="ulang" class="alt">↺ Ulangi</button>
+    <p id="petunjuk">Pilih lagu dan tempel lirik dulu.</p>
+    <button id="tap" disabled>TAP (atau tekan Spasi)</button>
+  </div>
+
+  <div class="card">
+    <h2>Hasil</h2>
+    <div id="lirik"></div>
+    <br>
+    <button id="salin" class="alt">Salin format LRC</button>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const audio = $('audio');
+
+let baris = [];   // teks lirik
+let waktu = [];   // waktu tap tiap baris (detik)
+
+// Pilih lagu
+$('fileLagu').onchange = e => {
+  audio.src = URL.createObjectURL(e.target.files[0]);
+};
+
+// Mulai sync
+$('mulai').onclick = () => {
+  baris = $('teksLirik').value.split('\n').map(b => b.trim()).filter(Boolean);
+  if (!audio.src || baris.length === 0) {
+    $('petunjuk').textContent = '⚠️ Pilih lagu dan tempel lirik dulu.';
+    return;
+  }
+  waktu = [];
+  $('tap').disabled = false;
+  tampilkanLirik();
+  audio.currentTime = 0;
+  audio.play();
+  perbaruiPetunjuk();
+};
+
+$('ulang').onclick = () => {
+  audio.pause();
+  waktu = [];
+  $('tap').disabled = true;
+  $('lirik').innerHTML = '';
+  $('petunjuk').textContent = 'Klik Mulai untuk mengulang.';
+};
+
+// Tap
+function tap() {
+  if (waktu.length >= baris.length) return;
+  waktu.push(audio.currentTime);
+  perbaruiPetunjuk();
+  if (waktu.length === baris.length) $('tap').disabled = true;
+}
+$('tap').onclick = tap;
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && !$('tap').disabled && e.target.tagName !== 'TEXTAREA') {
+    e.preventDefault();
+    tap();
+  }
+});
+
+function perbaruiPetunjuk() {
+  const i = waktu.length;
+  $('petunjuk').textContent = i < baris.length
+    ? `Tap saat dinyanyikan: "${baris[i]}"  (${i + 1}/${baris.length})`
+    : '✅ Selesai! Putar ulang lagunya untuk melihat hasilnya.';
+}
+
+function tampilkanLirik() {
+  $('lirik').innerHTML = baris.map((b, i) => `<div class="baris" id="b${i}">${b}</div>`).join('');
+}
+
+// Highlight lirik saat lagu berjalan
+let barisAktifTerakhir = -1;
+let jedaScrollSampai = 0;
+
+// Kalau kamu scroll manual, auto-scroll berhenti sebentar (3 detik)
+$('lirik').addEventListener('wheel', () => jedaScrollSampai = Date.now() + 3000);
+$('lirik').addEventListener('touchmove', () => jedaScrollSampai = Date.now() + 3000);
+
+audio.ontimeupdate = () => {
+  if (waktu.length === 0) return;
+  let aktif = -1;
+  waktu.forEach((t, i) => { if (audio.currentTime >= t) aktif = i; });
+  if (aktif === barisAktifTerakhir) return;   // hanya bergerak kalau barisnya berganti
+  barisAktifTerakhir = aktif;
+
+  document.querySelectorAll('.baris').forEach(el => el.classList.remove('aktif'));
+  if (aktif >= 0) {
+    const el = $('b' + aktif);
+    el.classList.add('aktif');
+    if (Date.now() > jedaScrollSampai) {
+      $('lirik').scrollTop = el.offsetTop - 110;
+    }
+  }
+};
+
+// Salin hasil dalam format LRC
+$('salin').onclick = () => {
+  const fmt = t => `[${String(Math.floor(t / 60)).padStart(2, '0')}:${(t % 60).toFixed(2).padStart(5, '0')}]`;
+  const lrc = waktu.map((t, i) => fmt(t) + ' ' + baris[i]).join('\n');
+  navigator.clipboard.writeText(lrc);
+  $('salin').textContent = 'Tersalin ✓';
+};
+</script>
+</body>
+</html>
