@@ -80,12 +80,11 @@ let waktu = [];   // waktu tap tiap baris (detik)
 // Mulai sync
 $('mulai').onclick = () => {
   baris = $('teksLirik').value.split('\n').map(b => b.trim()).filter(Boolean);
-if (baris.length === 0) {
-  $('petunjuk').textContent = '⚠️ Tempel lirik dulu di Langkah 2.';
-  return;
-}
-$('mulai').blur(); // supaya Spasi tidak menekan tombol Mulai lagi
+  if (baris.length === 0) {
+    $('petunjuk').textContent = '⚠️ Tempel lirik dulu di Langkah 2.';
+    return;
   }
+  $('mulai').blur(); // supaya Spasi tidak menekan tombol Mulai lagi
   waktu = [];
   $('tap').disabled = false;
   tampilkanLirik();
@@ -93,7 +92,7 @@ $('mulai').blur(); // supaya Spasi tidak menekan tombol Mulai lagi
   audio.play();
   perbaruiPetunjuk();
 };
-
+ 
 $('ulang').onclick = () => {
   audio.pause();
   waktu = [];
