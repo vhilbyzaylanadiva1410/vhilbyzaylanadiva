@@ -33,9 +33,8 @@
   <h1>🎵 Treat You Better</h1>
 
   <div class="card">
-    <h2>Langkah 1: Pilih lagu</h2>
-    <input type="file" id="fileLagu" accept="audio/*">
-    <audio id="audio" controls></audio>
+<h2>Langkah 1: Putar lagu</h2>
+<audio id="audio" controls preload="auto" src="lagu2.mp3"></audio>
   </div>
 
   <div class="card">
@@ -59,7 +58,7 @@ Better than he can
     <h2>Langkah 3: Tap sesuai beat</h2>
     <button id="mulai">▶ Mulai</button>
     <button id="ulang" class="alt">↺ Ulangi</button>
-    <p id="petunjuk">Pilih lagu dan tempel lirik dulu.</p>
+    <p id="petunjuk">Klik Mulai, lalu tekan Spasi sesuai beat.</p>
     <button id="tap" disabled>TAP (atau tekan Spasi)</button>
   </div>
 
@@ -78,17 +77,14 @@ const audio = $('audio');
 let baris = [];   // teks lirik
 let waktu = [];   // waktu tap tiap baris (detik)
 
-// Pilih lagu
-$('fileLagu').onchange = e => {
-  audio.src = URL.createObjectURL(e.target.files[0]);
-};
-
 // Mulai sync
 $('mulai').onclick = () => {
   baris = $('teksLirik').value.split('\n').map(b => b.trim()).filter(Boolean);
-  if (!audio.src || baris.length === 0) {
-    $('petunjuk').textContent = '⚠️ Pilih lagu dan tempel lirik dulu.';
-    return;
+if (baris.length === 0) {
+  $('petunjuk').textContent = '⚠️ Tempel lirik dulu di Langkah 2.';
+  return;
+}
+$('mulai').blur(); // supaya Spasi tidak menekan tombol Mulai lagi
   }
   waktu = [];
   $('tap').disabled = false;
